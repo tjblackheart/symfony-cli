@@ -20,28 +20,51 @@
 package util
 
 import (
+	"os"
 	"os/user"
 	"path/filepath"
-
-	"github.com/mitchellh/go-homedir"
+	"runtime"
 )
 
 func GetHomeDir() string {
-	return filepath.Join(getUserHomeDir(), ".symfony5")
+	return getUserHomeDir()
 }
 
 func getUserHomeDir() string {
+	dir := "symfony5"
+	dotDir := "." + dir
+
 	if InCloud() {
 		u, err := user.Current()
 		if err != nil {
-			return "/tmp"
+			return filepath.Join(os.TempDir(), dir)
 		}
-		return "/tmp/" + u.Username
+		return filepath.Join(os.TempDir(), u.Username, dir)
 	}
 
-	if homeDir, err := homedir.Dir(); err == nil {
-		return homeDir
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
 	}
 
-	return "."
+	// use the old path if it exists already
+	fallback := filepath.Join(home, dotDir)
+	if _, err := os.Stat(fallback); !os.IsNotExist(err) {
+		return fallback
+	}
+
+	// macos only: if $HOME/.config exist, prefer that over 'Library/Application Support'
+	if runtime.GOOS == "darwin" {
+		dotconf := filepath.Join(home, ".config")
+		if _, err := os.Stat(dotconf); !os.IsNotExist(err) {
+			return filepath.Join(dotconf, dir)
+		}
+	}
+
+	userCfg, err := os.UserConfigDir()
+	if err != nil {
+		return fallback
+	}
+
+	return filepath.Join(userCfg, dir)
 }
