@@ -26,20 +26,20 @@ import (
 	"runtime"
 )
 
+const confDir = "symfony5"
+
 func GetHomeDir() string {
 	return getUserHomeDir()
 }
 
 func getUserHomeDir() string {
-	dir := "symfony5"
-	dotDir := "." + dir
 
 	if InCloud() {
 		u, err := user.Current()
 		if err != nil {
-			return filepath.Join(os.TempDir(), dir)
+			return filepath.Join(os.TempDir(), confDir)
 		}
-		return filepath.Join(os.TempDir(), u.Username, dir)
+		return filepath.Join(os.TempDir(), u.Username, confDir)
 	}
 
 	home, err := os.UserHomeDir()
@@ -48,23 +48,22 @@ func getUserHomeDir() string {
 	}
 
 	// use the old path if it exists already
-	fallback := filepath.Join(home, dotDir)
-	if _, err := os.Stat(fallback); !os.IsNotExist(err) {
-		return fallback
+	legacy := filepath.Join(home, "."+confDir)
+	if _, err := os.Stat(legacy); !os.IsNotExist(err) {
+		return legacy
 	}
 
 	// macos only: if $HOME/.config exist, prefer that over 'Library/Application Support'
 	if runtime.GOOS == "darwin" {
 		dotconf := filepath.Join(home, ".config")
 		if _, err := os.Stat(dotconf); !os.IsNotExist(err) {
-			return filepath.Join(dotconf, dir)
+			return filepath.Join(dotconf, confDir)
 		}
 	}
 
-	userCfg, err := os.UserConfigDir()
-	if err != nil {
-		return fallback
+	if userCfg, err := os.UserConfigDir(); err == nil {
+		return filepath.Join(userCfg, confDir)
 	}
 
-	return filepath.Join(userCfg, dir)
+	return legacy
 }
