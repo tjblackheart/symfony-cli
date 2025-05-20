@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"runtime"
 )
 
 const confDir = "symfony5"
@@ -48,22 +47,14 @@ func getUserHomeDir() string {
 	}
 
 	// use the old path if it exists already
-	legacy := filepath.Join(home, "."+confDir)
-	if _, err := os.Stat(legacy); !os.IsNotExist(err) {
-		return legacy
-	}
-
-	// macos only: if $HOME/.config exist, prefer that over 'Library/Application Support'
-	if runtime.GOOS == "darwin" {
-		dotconf := filepath.Join(home, ".config")
-		if _, err := os.Stat(dotconf); !os.IsNotExist(err) {
-			return filepath.Join(dotconf, confDir)
-		}
+	legacyPath := filepath.Join(home, "."+confDir)
+	if _, err := os.Stat(legacyPath); !os.IsNotExist(err) {
+		return legacyPath
 	}
 
 	if userCfg, err := os.UserConfigDir(); err == nil {
 		return filepath.Join(userCfg, confDir)
 	}
 
-	return legacy
+	return legacyPath
 }
