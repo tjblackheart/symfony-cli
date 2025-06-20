@@ -56,5 +56,5 @@ func getUserHomeDir() string {
 		return filepath.Join(userCfg, confDir)
 	}
 
-	return legacyPath
+	return filepath.Join(".", "."+confDir)
 }
